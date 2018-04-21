@@ -110,8 +110,8 @@ ORDER BY score DESC;
 __윈도 프레임 지정 구문__
 현재 레코드 위치를 기반으로 상대적인 윈도를 정의함. `ROWS BETWEEN start AND end`  
 - 현재 행 : `CURRENT ROW`  
-- 이전 행 전부 : `UNBOUNDED PRECEDING`  
-- 이후 행 전부 : `UNBOUNDED FOLLOWING`  
+- 현재 행 + 이전 행 전부 : `UNBOUNDED PRECEDING` 
+- 현재 행 + 이후 행 전부 : `UNBOUNDED FOLLOWING`  
 - n행 앞 : `n PRECEDING`
 - n행 뒤 : `n FOLLOWING`
 <br>
