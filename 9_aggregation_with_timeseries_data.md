@@ -76,7 +76,7 @@ WITH
 daily_purchase AS (
   SELECT
     dt,
-    SUBSTR(dt,  1, 4) AS years,
+    SUBSTR(dt, 1, 4) AS years,
     SUBSTR(dt, 6, 2) AS months,
     SUBSTR(dt, 9, 2) AS dates,
     SUM(purchase_amount) AS purchase_amount
@@ -102,3 +102,73 @@ ORDER BY dt;
 <br>
 
 ### 9-4. 월별 매출의 전년 동월 대비 구하기
+
+```sql
+WITH daily_purchase AS (
+  SELECT
+    dt,
+    SUBSTR(dt, 1, 4) AS years,
+    SUBSTR(dt, 6, 2) AS months,
+    SUBSTR(dt, 9, 2) AS dates,
+    SUM(purchase_amount) AS purchase_amount
+  FROM purchase_log
+  GROUP BY dt
+  ORDER BY dt
+)
+SELECT
+  months,
+  SUM(CASE WHEN years='2014' THEN purchase_amount END) AS amount_2014,
+  SUM(CASE WHEN years='2015' THEN purchase_amount END) AS amount_2015,
+  ROUND(100
+    * SUM(CASE WHEN years='2014' THEN purchase_amount END)
+    /SUM(CASE WHEN years='2015' THEN purchase_amount END), 2)
+FROM daily_purchase
+GROUP BY months
+ORDER BY months;
+```
+
+이 실습을 통해 SUM() 내에 CASE WHEN을 쓸 수 있다는 걸 알게 되었다.
+아래는 처음에 짰던 시행착오 쿼리이다.
+
+```sql
+WITH daily_purchase AS (
+  SELECT
+    dt,
+    SUBSTR(dt, 1, 4) AS years,
+    SUBSTR(dt, 6, 2) AS months,
+    SUBSTR(dt, 9, 2) AS dates,
+    SUM(purchase_amount) AS purchase_amount
+  FROM purchase_log
+  GROUP BY dt
+  ORDER BY dt
+)
+SELECT
+  months,
+  SUM(amount_2014) AS amount_2014,
+  SUM(amount_2015) AS amount_2015,
+  ROUND(SUM(amount_2014)/SUM(amount_2015)*100, 2) AS rate
+FROM (
+      SELECT
+        months,
+        CASE WHEN years = '2014' THEN purchase_amount
+        END AS amount_2014,
+        CASE WHEN years = '2015' THEN purchase_amount
+        END AS amount_2015  
+      FROM daily_purchase
+      ) tmp
+GROUP BY months
+ORDER BY months;
+```
+<br>
+
+### 9-5. Z 차트로 업적의 추이 확인하기
+- Z 차트 : 판매 데이터 분석 기법의 하나. 계절에 따라 매출이 변동하는 경우 Z차트를 이용해 계절 변동의 영향을 배제하고 매출 추이를 분석함.
+- 구성요소 :
+  1) 월별매출 : 각 월의 매출
+  2) 누계매출 : 해당월을 포함한 당해년도 매출 누계
+  3) 이동년계: 해당월을 포함한 과겨 1년간 매출의 누계
+- 참고 : <a href='http://jungwoo5394.blogspot.kr/2015/05/z-z-chart.html'>차트 읽는 법</a>
+
+``` sql  
+
+```
