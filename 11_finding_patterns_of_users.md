@@ -73,6 +73,120 @@ FROM action_log;
 <p>
 
 위에서 산출한 login_status를 기반으로 액션 수와 unique users를 집계
+
 ```sql  
+WITH
+login_status AS (    
+  SELECT
+    session,
+    user_id,
+    action,
+    CASE
+      WHEN user_id IS NOT NULL THEN 'login'
+      ELSE 'guest'
+    END AS login_status
+  FROM action_log
+)
+SELECT *
+FROM
+(
+  -- (1)액션별 로그인/비로그인 상태에 따른 집계
+  (
+  SELECT
+    action,
+    login_status,
+    COUNT(DISTINCT session) AS action_unique_users,
+    COUNT(action) AS action_count
+  FROM login_status
+  GROUP BY action, login_status
+  )
+  UNION
+  -- (2)액션별 전체 집계
+  (
+  SELECT
+    action,
+    'all' AS login_status,
+    COUNT(DISTINCT session) AS action_unique_users,
+    COUNT(action) AS action_count
+  FROM login_status
+  GROUP BY action
+  )
+ORDER BY action
+) tmp
+
+UNION
+-- (3)전체 집계
+(
+SELECT
+  'all' AS action,
+  'all' AS login_status,
+  COUNT(DISTINCT session) AS action_unique_users,
+  COUNT(action) AS action_count
+FROM action_log
+);
 
 ```
+
+* `UNION`한 결과 전체에 `ORDER BY`를 적용할 때는, 각각의 `SELECT`문을 괄호로 감싼 뒤 마지막 구문 뒤에 `ORDER BY`를 붙이면 된다.
+(참고
+https://stackoverflow.com/questions/13261113/mysql-order-by-and-union-and-parentheses)
+
+* 그런데 `SELECT`문 각각에 서로 다른 정렬 기준을 적용해야 하는 경우도 있다. 위의 쿼리는 (1)+(2)를 action으로 ORDER BY하고, 가장 아래 row에 전체 집계값인 (3)을 붙이고 싶은 경우다. 이 때는 위와 같이 **서브쿼리** 를 사용해 준다.
+(참고 : https://dev.mysql.com/doc/refman/8.0/en/union.html
+  3번째 코멘트, Posted by Phil McCarley on February 28, 2006)
+
+
+```sql  
+--시행착오 쿼리 : 서브쿼리가 아닌 괄호만을 사용
+
+WITH
+login_status AS (    
+  SELECT
+    session,
+    user_id,
+    action,
+    CASE
+      WHEN user_id IS NOT NULL THEN 'login'
+      ELSE 'guest'
+    END AS login_status
+  FROM action_log
+)
+
+(
+  -- (1)액션별 로그인/비로그인 상태에 따른 집계
+  (
+  SELECT
+    action,
+    login_status,
+    COUNT(DISTINCT session) AS action_unique_users,
+    COUNT(action) AS action_count
+  FROM login_status
+  GROUP BY action, login_status
+  )
+  UNION
+  -- (2)액션별 전체 집계
+  (
+  SELECT
+    action,
+    'all' AS login_status,
+    COUNT(DISTINCT session) AS action_unique_users,
+    COUNT(action) AS action_count
+  FROM login_status
+  GROUP BY action
+  )
+ORDER BY action
+)
+UNION
+-- (3)전체 집계
+(
+SELECT
+  'all' AS action,
+  'all' AS login_status,
+  COUNT(DISTINCT session) AS action_unique_users,
+  COUNT(action) AS action_count
+FROM action_log
+);
+
+```
+
+* 위는 시행착오 쿼리다. 1차적으로 (1)+(2)를 `ORDER BY`한 결과에 괄호를 사용한 뒤 (3) `UNION`했다. 하지만 `ORDER BY`의 위치나 괄호 사용여부와 상관없이 (1)+(2)+(3)을 `UNION`한 결과 전체에 `ORDER BY`가 적용된다. 
