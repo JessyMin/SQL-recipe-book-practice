@@ -41,10 +41,12 @@ GROUP BY l.action, s.total_unique_users;
 
 <p>
 
-#### 로그인 사용자/비로그인 사용자 구분해서 집계하기
+### 로그인 사용자/비로그인 사용자 구분해서 집계하기
 
 - 서비스 충성도가 높은 사용자와 낮은 사용자의 행동 패턴을 비교할 수 있음
 - user_id 값이 비어 있으면 비로그인 사용자
+
+아래는 먼저 로그인/비로그인 상태를 판별하는 쿼리이다.
 
 ```sql  
 -- 로그인 상태를 판별하는 쿼리  
@@ -72,7 +74,35 @@ FROM action_log;
 ```
 <p>
 
-위에서 산출한 login_status를 기반으로 액션 수와 unique users를 집계
+위에서 산출한 login_status를 기반으로 액션 수와 unique users를 집계한다.
+
+__1) ROLLUP 사용__
+```sql
+WITH
+login_status AS (    
+  SELECT
+    session,
+    user_id,
+    action,
+    CASE
+      WHEN user_id IS NOT NULL THEN 'login'
+      ELSE 'guest'
+    END AS login_status
+  FROM action_log
+)
+SELECT
+  COALESCE(action, 'all') AS action,
+  COALESCE(login_status, 'all') AS login_status,
+  COUNT(DISTINCT session) AS action_unique_users,
+  COUNT(action) AS action_count
+FROM login_status
+GROUP BY action, login_status WITH ROLLUP;
+```
+
+<br>
+
+__2. UNION 사용(한 삽질)__
+...MySQL에 `ROLLUP`이 있는 걸 뒤늦게 알았다.
 
 ```sql  
 WITH
@@ -82,7 +112,7 @@ login_status AS (
     user_id,
     action,
     CASE
-      WHEN user_id IS NOT NULL THEN 'login'
+      WHEN COALESCE(user_id, ' ') <> ' ' THEN 'login'
       ELSE 'guest'
     END AS login_status
   FROM action_log
@@ -146,7 +176,7 @@ login_status AS (
     user_id,
     action,
     CASE
-      WHEN user_id IS NOT NULL THEN 'login'
+      WHEN COALESCE(user_id, ' ') <> ' ' THEN 'login'
       ELSE 'guest'
     END AS login_status
   FROM action_log
@@ -189,4 +219,4 @@ FROM action_log
 
 ```
 
-* 위는 시행착오 쿼리다. 1차적으로 (1)+(2)를 `ORDER BY`한 결과에 괄호를 사용한 뒤 (3) `UNION`했다. 하지만 `ORDER BY`의 위치나 괄호 사용여부와 상관없이 (1)+(2)+(3)을 `UNION`한 결과 전체에 `ORDER BY`가 적용된다. 
+* 위는 시행착오 쿼리다. 1차적으로 (1)+(2)를 `ORDER BY`한 결과에 괄호를 사용한 뒤 (3) `UNION`했다. 하지만 `ORDER BY`의 위치나 괄호 사용여부와 상관없이 (1)+(2)+(3)을 `UNION`한 결과 전체에 `ORDER BY`가 적용된다.
