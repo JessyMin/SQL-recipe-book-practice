@@ -118,8 +118,48 @@ FROM
 
 ### 6-3. 2개의 값 비율 계산하기
 
-* 책에는 0으로 나누면 오류가 발생한다고 되어 있으나, MySQL은 그냥 `NULL`을 반환한다.
+* 책에는 값을 0으로 나누면 오류가 발생한다고 되어 있으나, MySQL은 그냥 `NULL`을 반환한다.
 
+```sql
+SELECT
+    dt
+  , ad_id
+  , 100 * clicks / impressions AS ctr_as_percent
+FROM
+  advertising_stats
+;
+```
+
+<br>
+
+* 0으로 나누면 에러가 발생하는 엔진일 경우, `NULLIF`를 이용해 0을 null로 치환해준다.
+
+* `NULLIF(expr1, expr2)`
+  * 두 값이 같으면 null을 리턴, 다르면 expr1을 리턴함
+  * 0을 null로 치환할 때 사용
+
+```sql
+SELECT NULLIF(0, 0);  
+-- NULL을 리턴
+SELECT NULLIF(5, 0);
+-- 5를 리턴
+```
+
+<br>
+
+* 비슷한 함수도 정리해본다.
+* `IFNULL(expr1, expr2)`
+  * expr1이 null이면 expr2를 리턴, 아니면 원래값인 expr1을 리턴한다.
+  * null을 0으로 치환할 때 사용
+
+```sql
+SELECT IFNULL(NULL, 0);
+-- 0을 리턴
+SELECT IFNULL(3, 0);
+-- 원래값인 3을 리턴
+```
+
+<br>
 
 ### 6-5. 날짜/시간 계산하기
 
