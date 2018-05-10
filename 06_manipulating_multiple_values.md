@@ -161,6 +161,41 @@ SELECT IFNULL(3, 0);
 
 <br>
 
+### 6-4. 두 값의 거리 계산하기
+
+#### 절대값, 제곱평균 제곱근 계산하기
+
+* 제곱평균 제곱근(RMS: Root Mean Square) : 두 값의 차이를 제곱한 뒤 제곱근을 적용한 값
+```sql  
+SELECT
+    x1
+  , x2
+  , ABS(x1 - x2) AS abs
+  , SQRT(POWER((x1 - x2), 2)) AS rms
+FROM
+  location_1d
+;
+```
+
+#### 유클리드 거리 계산
+
+* 책에서는 'xy평면 위에 있는 두 점의 유클리드 거리 계산'으로 소개하고 있지만, 다차원 공간에 존재하는 두 점에도 적용 가능함.
+
+```sql
+SELECT
+    x1, y1
+  , x2, y2
+  , SQRT(
+      POWER((x1 - x2), 2) + POWER((y1 - y2), 2)
+    ) AS dist
+FROM
+  location_2d
+;
+```
+* PostgreSQL은 point 자료형과 거리 연산자 <-> 사용 가능
+
+<br>
+
 ### 6-5. 날짜/시간 계산하기
 
 * 기본적인 날짜/시간 데이터 계산 방법
