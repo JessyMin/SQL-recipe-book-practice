@@ -266,3 +266,68 @@ __3) 각 카테고리별 최상위 순위 상품 추출__
 ```
 ```sql
 ```
+
+### 7-3. Pivot(1) : 세로 기반 데이터를 가로 기반으로 변환하기
+
+#### 행을 열로 변환하기
+
+목표하는 피봇 테이블의 열의 종류와 수를 알고 있는 경우
+
+```sql  
+SELECT
+  dt
+  , SUM(CASE WHEN indicator = 'impressions' THEN val END) AS impressions
+  , SUM(CASE WHEN indicator = 'sessions' THEN val END) AS sessions
+  , SUM(CASE WHEN indicator = 'users' THEN val END) AS users
+FROM daily_kpi
+GROUP BY dt
+;
+```
+* CASE 식의 결과는 리스트이다. 여기서 값 하나를 추출하기 위해 일반적으로 MAX/MIN을 사용한다고 한다.
+
+아래는 나의 시행착오 쿼리다. CASE문 적용 후 다시 GROUP BY로 집계해, 불필요한 단계를 거쳤다.
+```sql
+WITH
+tmp AS (
+SELECT
+  dt
+  , CASE WHEN indicator = 'impressions' THEN val END AS impressions
+  , CASE WHEN indicator = 'sessions' THEN val END AS sessions
+  , CASE WHEN indicator = 'users' THEN val END AS users
+FROM
+  daily_kpi
+)
+SELECT
+  dt
+  , SUM(impressions) AS impressions
+  , SUM(sessions) AS sessions
+  , SUM(users) AS users
+FROM tmp
+GROUP BY dt
+;
+```
+
+#### 행을 쉼표로 구분한 문자열로 집약하기
+
+목표하는 피봇 테이블의 열의 종류와 수를 모르는 경우
+
+예) 상품 구매로그를 구매 ID 기반으로 집계할 때, 한 주문에 몇 개의 상품을 주문했는지 알 수 없는 경우
+
+```sql
+-- MySQL
+SELECT
+  purchase_id
+  , GROUP_CONCAT(product_id) AS product_ids
+  , SUM(price) AS amount
+FROM
+  purchase_detail_log
+GROUP BY
+  purchase_id
+;
+```
+
+* MySQL의 `GROUP_CONCAT()` 함수는 구분자의 디폴트 값이 쉼표로 되어 있다.
+* 변경하고 싶은 경우 `GROUP_CONCAT(column separator '|')` 이렇게 해준다. (<a href="http://fruitdev.tistory.com/16">참고</a>)
+
+
+* 레코드가 세로로 쌓여 있는 세로 기반 테이블은 시스템이 다루기 쉬운 반면, 가로 기반 테이블은 사람이 직감적으로 이해하기 쉽다.
