@@ -331,3 +331,39 @@ GROUP BY
 
 
 * 레코드가 세로로 쌓여 있는 세로 기반 테이블은 시스템이 다루기 쉬운 반면, 가로 기반 테이블은 사람이 직감적으로 이해하기 쉽다.
+
+<br>
+
+### 7-4. 가로 기반 데이터를 세로 기반으로 변환하기
+
+#### 열로 표현된 값을 행으로 변환하기
+
+```sql
+SELECT
+    years
+  , CASE
+      WHEN idx = 1 THEN 'q1'
+      WHEN idx = 2 THEN 'q2'
+      WHEN idx = 3 THEN 'q3'
+      WHEN idx = 4 THEN 'q4'
+    END AS quarter
+  , CASE
+      WHEN idx = 1 THEN q1
+      WHEN idx = 2 THEN q2
+      WHEN idx = 3 THEN q3
+      WHEN idx = 4 THEN q4
+    END AS sales    
+FROM quarterly_sales q
+CROSS JOIN
+  (
+             SELECT 1 AS idx
+   UNION ALL SELECT 2 AS idx
+   UNION ALL SELECT 3 AS idx
+   UNION ALL SELECT 4 AS idx
+  ) i
+ORDER BY years, quarter
+;
+```
+
+
+#### 임의의 길이를 가진 배열을 행으로 전개하기
