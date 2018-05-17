@@ -78,3 +78,54 @@ FROM mst_categories m;
 ```
 
 [의문] 상관 서브쿼리의 개념은? 어떨 때 사용하면 유용한 건지?
+
+<br>
+
+### 8-4. 계산한 테이블에 이름붙여 재사용하기(CTE)
+
+* CTE란?
+  * SQL99에서 도입된 공통 테이블 식(Common Table Expression)
+  * 일시적인 테이블에 이름을 붙여 재사용
+  * 코드의 가독성이 높아짐
+
+* 예시
+  * 카테고리별 매출 1/2/3위 제품을 추출한 테이블 작성
+
+```sql
+WITH
+product_sales_ranking AS (
+  SELECT
+    category_name,
+    product_id,
+    sales,
+    ROW_NUMBER()
+      OVER(PARTITION BY category_name ORDER BY sales DESC)
+      AS ranks
+  FROM product_sales
+)
+, mst_rank AS(
+  SELECT DISTINCT ranks AS ranks
+  FROM product_sales_ranking
+  LIMIT 3
+)
+SELECT
+  m.ranks
+, b.product_id AS book
+, b.sales AS book_sales
+, c.product_id AS cd
+, c.sales AS cd_sales
+, d.product_id AS dvd
+, d.sales AS dvd_sales
+FROM mst_rank m
+LEFT JOIN product_sales_ranking b
+  ON b.ranks = m.ranks
+     AND b.category_name = 'book'
+LEFT JOIN product_sales_ranking c
+  ON c.ranks = m.ranks
+     AND c.category_name = 'cd'
+LEFT JOIN product_sales_ranking d
+  ON d.ranks = m.ranks
+     AND d.category_name = 'dvd'
+;
+
+```
