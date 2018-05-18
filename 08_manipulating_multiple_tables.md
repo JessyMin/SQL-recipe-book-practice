@@ -81,6 +81,40 @@ FROM mst_categories m;
 
 <br>
 
+### 8-3. 조건 플래그를 0과 1로 표현하기
+
+* 조건을 0/1로 변환하는 방법
+  * `CASE` 식 사용
+  * `SIGN` 함수 사용 : 0 이상의 정수로 리턴할 수 있는 경우
+
+```sql  
+SELECT
+  c.user_id
+  , c.card_number
+  , COUNT(p.purchase_id) AS purchase_count
+  -- 카드번호가 등록되어 있으면 1, 없으면 0
+  , CASE
+      WHEN c.card_number IS NOT NULL THEN 1
+      ELSE 0
+    END AS has_card
+  -- 구매이력 있으면 1, 없으면 0
+  , SIGN(COUNT(o,purchase_id)) AS has_purchased
+FROM
+  mst_users_with_card_number c
+LEFT JOIN
+  purchase_log p
+  ON p.user_id = c.user_id
+GROUP BY
+  c.user_id, c.card_number
+;
+
+```
+[의문]`purchase_log` 테이블에서 user별 구매이력 계산할 때, 나는  `COUNT(purchase_id)`로 했는데, 책은 `COUNT(user_id)`로 했다. 
+특별한 이유가 있을까? 실무에서는 테이블의 key값 등을 확인해서 하면 될 듯 하다.
+
+
+<br>
+
 ### 8-4. 계산한 테이블에 이름붙여 재사용하기(CTE)
 
 * CTE란?
