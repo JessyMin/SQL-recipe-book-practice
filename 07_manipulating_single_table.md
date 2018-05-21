@@ -338,6 +338,9 @@ GROUP BY
 
 #### 열로 표현된 값을 행으로 변환하기
 
+* 만들고자 하는 테이블의 컬럼 수만큼 일련번호를 만들어 `CROSS JOIN`한다.
+* `CASE` 식으로 필요한 값 추출
+
 ```sql
 SELECT
     years
@@ -364,6 +367,22 @@ CROSS JOIN
 ORDER BY years, quarter
 ;
 ```
-
+<br>
 
 #### 임의의 길이를 가진 배열을 행으로 전개하기
+
+* 아래와 같이 데이터 길이가 가변적인 경우
+```
+purchase_id |    product_ids
+--------------------------------
+   100001   | A001, A002, A003
+   100002   | D001, D002
+   100003   | A001
+```
+
+* 테이블 함수 사용 : 배열을 입력받아 레코드 분할해서 테이블로 리턴해줌
+
+* 그런데... MySQL에는 이런 함수가 없다고 한다.
+<a href="https://stackoverflow.com/questions/27364788/unnest-function-in-mysql-like-postgresql">UNNEST function in MYSQL like POSTGRESQL
+ </a>
+ * 이런 상황에 놓이면 이 책을 찾아보거나(p.111~117) R을 사용해야겠다.
