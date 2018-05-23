@@ -21,7 +21,8 @@ SELECT
   user_id,
   name,
   email
-FROM app1_mst_users
+FROM
+  app1_mst_users
 
 UNION ALL
 
@@ -30,7 +31,8 @@ SELECT
   user_id,
   name,
   '' AS email
-FROM app2_mst_users;
+FROM
+  app2_mst_users;
 ```
 
 <br>
@@ -43,12 +45,15 @@ SELECT
   m.name,
   s.sales,
   r.product_id
-FROM mst_categories m
+FROM
+  mst_categories m
 -- 카테고리별 매출액 결합
-LEFT JOIN category_sales s
+LEFT JOIN
+  category_sales s
   ON m.category_id = s.category_id
 -- 카테고리별 최고매출 상품만 결합
-LEFT JOIN product_sale_ranking r
+LEFT JOIN
+  product_sale_ranking r
   ON m.category_id = r.category_id
   AND r.ranks = 1;
 ```
@@ -73,7 +78,8 @@ SELECT
    ORDER BY sales DESC
    LIMIT 1
   ) AS top_sale_product
-FROM mst_categories m;
+FROM
+  mst_categories m;
 
 ```
 
@@ -109,8 +115,8 @@ GROUP BY
 ;
 
 ```
-[의문]`purchase_log` 테이블에서 user별 구매이력 계산할 때, 나는  `COUNT(purchase_id)`로 했는데, 책은 `COUNT(user_id)`로 했다. 
-특별한 이유가 있을까? 실무에서는 테이블의 key값 등을 확인해서 하면 될 듯 하다.
+[의문] user별 구매횟수 계산할 때, 나는  `COUNT(purchase_id)`로 했는데, 책은 `COUNT(user_id)`로 했다.
+특별한 이유가 있을까? 실무에서는 구매로그 테이블의 key값 등을 확인해서 하면 될 듯 하다.
 
 
 <br>
@@ -135,11 +141,14 @@ product_sales_ranking AS (
     ROW_NUMBER()
       OVER(PARTITION BY category_name ORDER BY sales DESC)
       AS ranks
-  FROM product_sales
+  FROM
+    product_sales
 )
 , mst_rank AS(
-  SELECT DISTINCT ranks AS ranks
-  FROM product_sales_ranking
+  SELECT
+    DISTINCT ranks AS ranks
+  FROM
+    product_sales_ranking
   LIMIT 3
 )
 SELECT
@@ -150,16 +159,54 @@ SELECT
 , c.sales AS cd_sales
 , d.product_id AS dvd
 , d.sales AS dvd_sales
-FROM mst_rank m
-LEFT JOIN product_sales_ranking b
+FROM
+  mst_rank m
+LEFT JOIN
+  product_sales_ranking b
   ON b.ranks = m.ranks
      AND b.category_name = 'book'
-LEFT JOIN product_sales_ranking c
+LEFT JOIN
+  product_sales_ranking c
   ON c.ranks = m.ranks
      AND c.category_name = 'cd'
-LEFT JOIN product_sales_ranking d
+LEFT JOIN
+  product_sales_ranking d
   ON d.ranks = m.ranks
      AND d.category_name = 'dvd'
 ;
 
 ```
+
+<br>
+
+### 8-5. 유사 테이블 만들기
+
+* 테이블 생성 권한이 없을 때, 임시로 유사테이블을 만들어 사용
+create permission, temp table
+
+```sql
+WITH
+mst_devices AS (
+  SELECT
+    1 AS device_id, 'Desktop' AS device_name
+  UNION ALL
+  SELECT
+    2 AS device_id, 'Mobile' AS device_name
+  UNION ALL
+  SELECT
+    3 AS device_id, 'Tablet' AS device_name
+)
+SELECT
+    user_id
+  , device_name
+FROM
+  mst_users u
+LEFT JOIN
+  mst_devices d
+  ON u.register_device = d.device_id
+;
+```
+* 책에서는 `UNION ALL`을 사용하지 않고, 배열을 이용해 테이블을 생성하는 방법을 설명하고 있다.
+* 그러나 MySQL은 배열을 지원하지 않는다.
+* 따라서 device_id는 @n을 사용하고, {'Desktop','Mobile','Tablet'}이라는 배열을 WITH문 안에 삽입하는 방법을 찾아보았으나, 찾지 못했다.
+* 지인 찬스를 써서 물어봐야 할 듯하다. 이게 가능한지.
